@@ -374,7 +374,7 @@ def getSysStats():
 
         GWStats["mx_host"] = MXHOST
         influxDbStats["imperva_gw_sys"]["mx_hostname="+MXHOST] = []
-        GWSonarStats["mx"] = MXHOST
+        #GWSonarStats["mx"] = MXHOST
         sysStat = influxDbStats["imperva_gw_sys"]["mx_hostname="+MXHOST]
         
         m = re.search(r'(appliance)\s(tag=).*',content)
@@ -384,14 +384,14 @@ def getSysStats():
         GWMODEL = model
         influxDbStats["imperva_gw_sys"]["model="+model] = []        
         sysStat = influxDbStats["imperva_gw_sys"]["model="+model]
-        GWSonarStats["system"]["model"] = GWMODEL
+        #GWSonarStats["system"]["model"] = GWMODEL
         
         pipe = Popen(['/opt/SecureSphere/etc/impctl/bin/gateway/status'], stdout=PIPE)
         output = pipe.communicate()
         #influxDbStats["imperva_gw_sys"]["status"] = strim(output[0])
         influxDbStats["imperva_gw_sys"]["status"] = strim(output[0].decode('utf-8'))
         GWStats["status"] = strim(output[0].decode('utf-8'))
-        GWSonarStats["system"]["status"] = strim(output[0].decode('utf-8'))
+        #GWSonarStats["system"]["status"] = strim(output[0].decode('utf-8'))
 
         pipe = Popen(['/opt/SecureSphere/etc/impctl/bin/platform/show'], stdout=PIPE)
         output = pipe.communicate()
@@ -402,14 +402,14 @@ def getSysStats():
                 val = statAry.pop()
                 influxDbStats["imperva_gw_sys"][key+"="+val] = []
                 sysStat = influxDbStats["imperva_gw_sys"][key+"="+val]
-                GWSonarStats["system"][key] = val
+                #GWSonarStats["system"][key] = val
         
         sysStat.append("gw_supported_kbps="+gwSizingStats[model]["gw_supported_kbps"])
         sysStat.append("gw_supported_hps="+gwSizingStats[model]["gw_supported_hps"])
         GWStats["gw_supported_kbps"] = int(gwSizingStats[model]["gw_supported_kbps"])
         GWStats["gw_supported_hps"] = int(gwSizingStats[model]["gw_supported_hps"])
-        GWSonarStats["system"]["supported_kbps"] = int(gwSizingStats[model]["gw_supported_kbps"])
-        GWSonarStats["system"]["supported_hps"] = int(gwSizingStats[model]["gw_supported_hps"])        
+        #GWSonarStats["system"]["supported_kbps"] = int(gwSizingStats[model]["gw_supported_kbps"])
+        #GWSonarStats["system"]["supported_hps"] = int(gwSizingStats[model]["gw_supported_hps"])        
         
         global UPTIME
         pipe = subprocess.Popen("cat /proc/uptime", shell=True, stdout=subprocess.PIPE)
@@ -417,7 +417,9 @@ def getSysStats():
         UPTIME = output.decode('utf-8').strip().split(" ")[0].split(".")[0]
         sysStat.append("uptime=" + UPTIME)
         GWStats["uptime"] = UPTIME
-        GWSonarStats["system"]["uptime"] = UPTIME
+        #GWSonarStats["system"]["uptime"] = UPTIME
+        
+        
         # # Get latest successful configuration revision message
         # input, output, error = os.popen3("cat /opt/SecureSphere/etc/logs/GatewayLog/GatewayLog.html | awk '/applied successfully/ {line=$0} END{print line}' | grep -E -o '[0-9]+'")
         # revision_update_data = output.read().split()
@@ -432,48 +434,48 @@ def getSysStats():
             statType = stat.split(":").pop(0).lower().strip()
             statsAry = ' '.join(stat.split(":").pop().lower().strip().split()).split(",")
             if statType[:3]=="mem" or statType[:4]=="swap":
-                GWSonarStats["memory"][statType] = {}
+                #GWSonarStats["memory"][statType] = {}
                 for curStat in statsAry:
                     statAry = curStat.strip().split()
                     statMeasurement = statAry[1][:5].replace(".","").strip()
                     if statMeasurement=="total" or statMeasurement=="used" or statMeasurement=="free":
                         sysStat.append(statType+"_"+statMeasurement+"="+statAry[0])
                         GWStats["top_"+statType+"_"+statMeasurement] = float(statAry[0])
-                        GWSonarStats["memory"][statType][statMeasurement] = float(statAry[0])
+                        #GWSonarStats["memory"][statType][statMeasurement] = float(statAry[0])
             elif statType[:3]=="cpu":
                 cpu = statType.replace("cpu","")
-                GWSonarStats["cpu"]["top"][cpu] = {}
+                #GWSonarStats["cpu"]["top"][cpu] = {}
                 influxDbStats["imperva_gw_top_cpu"]["cpu="+cpu] = []
                 GWCpuStatAry = influxDbStats["imperva_gw_top_cpu"]["cpu="+cpu]
                 for cpuStat in statsAry:
                     statAry = cpuStat.strip().split()
                     GWCpuStatAry.append(topCpuAttrMap[statAry[1]]+"="+statAry[0])
                     GWStats["top_"+statType.lower()+"_"+topCpuAttrMap[statAry[1]]] = float(statAry[0])                    
-                    GWSonarStats["cpu"]["top"][cpu][topCpuAttrMap[statAry[1]]] = float(statAry[0])
+                    #GWSonarStats["cpu"]["top"][cpu][topCpuAttrMap[statAry[1]]] = float(statAry[0])
             elif "load average" in stat:
                 last_min_average = stat.split("load average: ").pop(1).split(",").pop(0).strip()
                 lastSecAry = influxDbStats["imperva_gw_top_cpu"]["cpu=all"] = []                
                 lastSecAry.append("last_min_load_average="+str(last_min_average))
                 GWStats["cpuload_last_min_load_average"] = float(last_min_average)
-                GWSonarStats["cpu"]["last_min_load"]["average"] = float(last_min_average)
+                #GWSonarStats["cpu"]["last_min_load"]["average"] = float(last_min_average)
 
         # create average of each stat
         systemCpuStats = {"used":0}
         totalCpus = 0
-        for stat in GWSonarStats["cpu"]["top"]["0"]:
-            systemCpuStats[stat] = 0
-        for cpu in GWSonarStats["cpu"]["top"]:
-            totalCpus+=1
-            for stat in GWSonarStats["cpu"]["top"][cpu]:
-                systemCpuStats[stat] += GWSonarStats["cpu"]["top"][cpu][stat]        
+        #for stat in GWSonarStats["cpu"]["top"]["0"]:
+        #    systemCpuStats[stat] = 0
+        #for cpu in GWSonarStats["cpu"]["top"]:
+        #    totalCpus+=1
+        #    for stat in GWSonarStats["cpu"]["top"][cpu]:
+        #        systemCpuStats[stat] += GWSonarStats["cpu"]["top"][cpu][stat]        
         totalStats = 0
-        for stat in systemCpuStats:
-            systemCpuStats[stat] = systemCpuStats[stat]/totalCpus
-            if stat!="idle":
-                totalStats+=1
-                systemCpuStats["used"]+=systemCpuStats[stat]
-        systemCpuStats["used"] = systemCpuStats["used"]/totalStats
-        GWSonarStats["cpu"]["top"]["system"] = systemCpuStats
+        #for stat in systemCpuStats:
+        #    systemCpuStats[stat] = systemCpuStats[stat]/totalCpus
+        #    if stat!="idle":
+        #        totalStats+=1
+        #        systemCpuStats["used"]+=systemCpuStats[stat]
+        #systemCpuStats["used"] = systemCpuStats["used"]/totalStats
+        #GWSonarStats["cpu"]["top"]["system"] = systemCpuStats
 
         try:
             # @TODO implement sonar stat for sar
@@ -501,13 +503,16 @@ def getSysStats():
 
         pipe = Popen(['cat',BASEDIR+'cpuload'], stdout=PIPE)
         output = pipe.communicate()
+        decoded_output = output[0].decode('utf-8').strip()
         cpuloadOutputAry = str(output[0]).strip().split("\n\n")
-
+        print(f"DEBUG: Dữ liệu trước khi split:\n{decoded_output}")  
+        cpuloadOutputAry = decoded_output.split("\n\n")
+        print(f"DEBUG: Danh sách sau khi split: {cpuloadOutputAry}")  
         for stat in cpuloadOutputAry[1].split("\n"):
             if stat[:4]!="last":
                 statAry = ' '.join(stat.split()).split(":")
                 GWStats["cpuload_last_sec_"+statAry[0].replace(" ","_")] = int(statAry[1].strip())
-                GWSonarStats["cpu"]["last_sec_load"][statAry[0].replace(" ","_").replace("_load","")] = int(statAry[1].strip())
+                #GWSonarStats["cpu"]["last_sec_load"][statAry[0].replace(" ","_").replace("_load","")] = int(statAry[1].strip())
                 if stat[:7!="average"]:
                     cpuNum = statAry[0].replace("cpu","").split().pop(0)
                     influxDbStats["imperva_gw_cpuload"]["cpu="+cpuNum] = []
@@ -675,7 +680,7 @@ def makeInfluxDBCall(measurement, tags, params):
 #             logging.info("SYSLOG REQUEST: "+json.dumps(jsonObj))
 #             try:
 #                 logger = logging.getLogger('Logger')
-#                 logger.setLevel(logging.INFO)
+#                 logger.setLevel(logging. INFO)
 #                 handler = logging.handlers.SysLogHandler(address = (syslogEndpoint["host"], syslogEndpoint["port"]),facility=syslogEndpoint["facility"],socktype=(socket.SOCK_STREAM if syslogEndpoint["protocol"]=="TCP" else socket.SOCK_DGRAM))
 #                 logger.addHandler(handler)
 #                 logger.info(jsonObj)
